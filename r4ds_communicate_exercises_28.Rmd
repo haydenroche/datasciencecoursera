@@ -1,0 +1,136 @@
+---
+title: "r4ds_communicate_exercises_28"
+author: "Hayden Roche"
+date: "November 2, 2017"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tibble)
+library(stringr)
+library(dplyr)
+```
+
+#Question 28.2.1.1
+
+```{r}
+ggplot(mpg, aes(displ, cty)) + 
+  geom_point(aes(color = manufacturer)) +
+  labs(title = "City Fuel Efficiency by Manufacturer",
+       subtitle = "Chervolet's skew far to the right range of engine displacement",
+       caption = "Data from fueleconomy.gov",
+       x = "Engine Displacement",
+       y = "City mpg",
+       color = "Manufacturer")
+```
+
+#Question 28.2.1.2
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Fuel efficiency generally decreases with engine size",
+       subtitle = "Two seaters (sports cars) are an exception because of their light weight",
+       caption = "Data from fueleconomy.gov")
+```
+
+#Question 28.2.1.3
+Done using an old swirl plot 
+
+
+#Question 28.3.1.1
+
+```{r}
+label <- tribble(
+  ~price, ~carat, ~label, ~vjust, ~hjust,
+  Inf,  Inf,    "Top right", "top", "right",
+  Inf, -Inf,    "Bottom right", "bottom", "right",
+  -Inf,  Inf,    "Top left", "top", "left",
+  -Inf, -Inf,    "Bottom left", "bottom", "left")
+
+ggplot(diamonds, aes(price, carat)) +
+  geom_point() +
+  geom_text(aes(label = label, vjust = vjust, hjust = hjust), data = label)
+```
+
+#Question 28.3.1.2
+
+```{r}
+ggplot(diamonds, aes(price, carat)) +
+  geom_point() +
+  annotate("text", x = Inf, y = Inf, label = "The price of diamonds increases \nwith the overall carat size", vjust = "top", hjust = "right")
+
+```
+
+#Question 28.3.1.3
+
+```{r}
+label <- tibble(
+  price = Inf,
+  carat = Inf,
+  label = "The price of diamonds increases \nwith the overall carat size")
+
+ggplot(diamonds, aes(price, carat)) +
+  geom_point() +
+  geom_text(aes(label = label), data = label, vjust = "top", hjust = "left") +
+  facet_wrap(~cut)
+```
+
+#Question 28.3.1.4
+
+You can utilize label.padding which changes the amount of padding around label. The default is 0.25 lines. Also, label.r creates a radius of rounded corners. It defaults to 0.15 lines
+
+#Question 28.3.1.5
+
+ - Angle
+ - Length
+ - Ends
+ - Type: this will change whether the arrow head is a closed or open triangle
+ 
+#Question 28.4.4.1
+It's not overriding the default scale, because geom_hex() doesn't accept the colour argument. Geom_hex() works with the fill() argument 
+
+```{r}
+df <- tibble(
+  x = rnorm(10000),
+  y = rnorm(10000)
+)
+ggplot(df, aes(x, y)) +
+  geom_hex() +
+  scale_fill_gradient(low = "white", high = "red") +
+  coord_fixed()
+```
+
+#Question 28.4.4.2
+
+It appears from the examples that the first argument to every scale function is an argument sued to control name and labels. Therefore, it is very similar to the labs() function
+
+#Question 28.4.4.3
+
+```{r}
+presidential %>%
+  mutate(Number = 33 + row_number(),
+         Name_Number = str_c(name, " (", Number, ")"),
+         Name_Number = factor(Name_Number, levels = Name_Number)) %>%
+  ggplot(aes(start, Name_Number, colour = party)) +
+    geom_point() +
+    geom_segment(aes(xend = end, yend = Name_Number)) +
+    scale_colour_manual(values = c(Republican = "red", Democratic = "blue")) 
+```
+
+#Question 28.4.4.4
+
+```{r}
+ggplot(diamonds, aes(carat, price)) +
+  geom_point(aes(colour = cut), alpha = 1/20) +
+  theme(legend.position = "top") +
+  guides(colour = guide_legend(nrow = 1, override.aes = list(alpha = 1/2)))
+```
+
+
+
