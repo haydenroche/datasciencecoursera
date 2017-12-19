@@ -1,0 +1,100 @@
+---
+title: "Statistical Inference - Part 1"
+author: "Hayden Roche"
+date: "December 18, 2017"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Synopsis
+The examples outline below will be simulation exercises that aim to illustrate the properties of the distribution of the mean of 40 exponentials. Through the comparison of sample and theoretical means and variance, we will show that the distribution is approximately normal.
+
+#Part 1
+
+##Question 1: Show the sample mean and compare it to the theoretical mean of the distribution
+
+The process seen below is the creating of our variables that will be piped into the Sample mean function. This is a similar example as we've seen in the course Swirl exercises, but I've tailored it to the example in this Course Project. The equation for theoretical mean is (lambda^-1)
+
+```{r mean}
+n <- 40
+lambda <- 0.2
+Sims <- 1000
+
+TheoMean <- 1/lambda
+TheoMean
+
+Sample_mean <- NULL
+for(i in 1:Sims) {
+  Sample_mean <- c(Sample_mean, mean(rexp(n, lambda)))
+}
+mean(Sample_mean)
+```
+
+##Question 2: Show how variable the sample is and compare it to the theoretical variance of the distribution
+
+In this part, I'm running the sample variance of the simulated dataset. The sample variance ended up being 0.62. The equation for the theoretical mean of an expontential distribution is 1/(lambda*sqrt(n))^2. The theoretical variance is 0.625, therefore it is incredibly close to the sample variance. 
+
+```{r variance}
+Sample_Variance <- var(Sample_mean)
+Sample_Variance
+
+TheoVariance <- (lambda*sqrt(n))^-2
+TheoVariance
+```
+
+
+##Question 3: Show that the distribution is approximately normal
+
+```{r distro}
+par(mar=c(1,1,1,1))
+hist(Sample_mean, breaks = 50, prob = T, col = "orange", xlab =  "Mean_samples", ylab = "Density", main = "Approx. Normal Distribution of Sample Mean")
+x <- seq(min(Sample_mean), max(Sample_mean), length = 100)
+lines(x, dnorm(x, mean = 1/lambda, sd = (1/lambda/sqrt(n))), pch = 25, col = "purple")
+```
+
+```{r distro2}
+qqnorm(Sample_mean)
+qqline(Sample_mean, col = "orange")
+```
+
+
+
+##Question 3: Use confidence intervals and/or hypothesis tests to compare growth by supp and dose
+
+The following hypothesis tests will be analysis the null hypothesis of: "OJ and VC deliver the same tooth growth". The various tests will test the hypothesis in 4 scenarios (entire dataset, 0.5mg dosage, 1.0mg dosage and 2.0mg dosage)
+
+Test -- In this test we aren't subsetting by dosage, therefore we are looking at the entire dataset. The p-value is greater than the 95% confidence interval threshold of 0.05. Therfore, the null hypothesis cannot be rejected.
+
+Test1 -- In this test we are subsetting by dosage = 0.5. The confidence interval does not include 0 in this example and the p-value is well below 0.05 at 0.006. Therfore we can reject the null hypothesis and accept the alternative hypothesis that 0.5mg/day of OJ leads to more tooth growth than VC. 
+
+Test2 -- In this test we are subsetting by dosage = 1.0. The confidence interval does not include 0 in this example and the p-value is well below 0.05 at 0.001. Therfore we can reject the null hypothesis and accept the alternative hypothesis that 1.0mg/day of OJ leads to more tooth growth than VC. 
+
+Test3 -- In this test we are subsetting by dosage = 2.0. The confidence interval does include 0 in this subset and the p-value is well above 0.05 at 0.96. Therefore, the null hypothesis cannot be rejected. 
+
+```{r confidence}
+Test <- t.test(len~supp, data = ToothGrowth)
+Test$conf.int
+Test$p.value
+
+Test1 <- t.test(len~supp, data = ToothGrowth, dose == 0.5)
+Test1$conf.int
+Test1$p.value
+
+Test2 <- t.test(len~supp, data = ToothGrowth, dose == 1)
+Test2$conf.int
+Test2$p.value
+
+Test3 <- t.test(len~supp, data = ToothGrowth, dose == 2)
+Test3$conf.int
+Test3$p.value
+```
+
+##Conclusions
+Below is a breakdown with all of the results:
+ - Entire dataset and 2.0mg/day: we're unable to make any conclusions on whether OJ is more effective than VC
+ - 0.5mg/day and 1.0mg/day: for these two subsets of data, OJ delivers more tooth growth on average than VC
