@@ -1,0 +1,122 @@
+---
+title: "Reproducible Research - Project 2"
+author: "Hayden Roche"
+date: "December 19, 2017"
+output: html_document
+---
+
+#Data Processing
+
+Using a download.file function I was able to pull the zip file right into R Studio and read the csv in through a local storage file. The next step was implementing gsub to clean up the PROMDMG column because there were a lot of inconsistencies with the naming conventions. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(dplyr)
+library(RCurl)
+library(ggplot2)
+
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", "storm.csv")
+Storm_raw <- read.csv("storm.csv")
+
+Clean_Storm_data <- 
+  Storm_raw[,c("BGN_DATE","EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", 'CROPDMG', 'CROPDMGEXP')]
+Clean_Storm_data$BGN_DATE <- as.Date(Clean_Storm_data$BGN_DATE, format = "%m/%d/%Y")
+Clean_Storm_data$TotalDamage <- paste(Clean_Storm_data$PROPDMG,"-", Clean_Storm_data$PROPDMGEXP)
+Clean_Storm_data$EVTYPE <- as.character(Clean_Storm_data$EVTYPE)
+Clean_Storm_data$EVTYPE <- 
+  gsub("^HEAT", "EXCESSIVE HEAT", Clean_Storm_data$EVTYPE)
+Clean_Storm_data$EVTYPE <- 
+  gsub("^TSTM WIND$", "THUNDERSTORM WIND", Clean_Storm_data$EVTYPE)
+Clean_Storm_data$EVTYPE <- 
+  gsub("^THUNDERSTORM WIND$", "THUNDERSTORM WINDS", Clean_Storm_data$EVTYPE)
+Clean_Storm_data$EVTYPE <- 
+  gsub("^RIP CURRENTS$", "RIP CURRENT", Clean_Storm_data$EVTYPE)
+
+```
+
+
+#Synopsis
+This analysis is looking into fatalities, injuries and property damages from various natural disasters. These natural disasters have been recorded over from 1950-2011. The overall findings are quite interesting: torandoes, excessive heat and flash floods are the deadliest of natural disasters. Over the 60 years of data collection, tornadoes accounted for 5.6K fatalities.
+
+The story is similar when we look at injuries, but the magnitude increases significantly. Tornadoes led the injury count by miles, with a total 91.3K and then excessive heat followed with 8.6K injuries. An interesting next step would be creating a weighted damage measure that factored in both deaths and injuries. This would then take a nice consistent measure for damages. 
+
+```{r cars}
+str(Clean_Storm_data)
+head(Clean_Storm_data)
+```
+
+#Results
+##Fatalities: Manipulating the data to the top 5 most dangerous natural events type
+```{r fatalities, echo=TRUE}
+Fatalities_DF <- Clean_Storm_data %>%
+  mutate(Year = year(BGN_DATE)) %>%
+  group_by(Year, EVTYPE) %>%
+  summarise(All_Fatalities = sum(FATALITIES)) %>%
+  filter(EVTYPE == 'EXCESSIVE HEAT' | EVTYPE == 'TORNADO' | EVTYPE == 'LIGHTNING' | EVTYPE == 'FLASH FLOOD' | EVTYPE == 'RIP CURRENT' | EVTYPE == 'FLOOD' | EVTYPE == 'HIGH WIND' | EVTYPE == 'AVALANCHE')
+
+m <- ggplot(data = Fatalities_DF, aes(x = Year, y = All_Fatalities)) +
+  geom_point() +
+  stat_smooth() 
+  m + facet_wrap( ~ EVTYPE, ncol=4, scales="free")
+print(m)
+```
+
+##Fatalities: Manipulating the data to the top 5 most dangerous natural events type
+```{r fatalities2, echo=TRUE}
+Fatalities_Total <- Clean_Storm_data %>%
+  mutate(Year = year(BGN_DATE)) %>%
+  group_by(EVTYPE) %>%
+  summarise(All_Fatalities = sum(FATALITIES)) %>%
+  as.data.frame() %>%
+  arrange(desc(All_Fatalities)) %>%
+  filter(EVTYPE == 'EXCESSIVE HEAT' | EVTYPE == 'TORNADO' | EVTYPE == 'LIGHTNING' | EVTYPE == 'FLASH FLOOD' | EVTYPE == 'RIP CURRENT' | EVTYPE == 'FLOOD' | EVTYPE == 'HIGH WIND' | EVTYPE == 'AVALANCHE')
+View(Fatalities_Total)
+
+b <- ggplot(Fatalities_Total, aes(x = EVTYPE, y = All_Fatalities, fill = EVTYPE))
+b + geom_bar(stat = "identity")
+```
+
+##Injuries: Manipulating the data to the top 8 most dangerous natural events type
+```{r injuries, echo=TRUE}
+Injuries_DF <- Clean_Storm_data %>%
+  mutate(Year = year(BGN_DATE)) %>%
+  group_by(Year, EVTYPE) %>%
+  summarise(All_Injuries = sum(INJURIES)) %>%
+  filter(EVTYPE == 'EXCESSIVE HEAT' | EVTYPE == 'TORNADO' | EVTYPE == 'LIGHTNING' | EVTYPE == 'FLASH FLOOD' | EVTYPE == 'RIP CURRENT' | EVTYPE == 'FLOOD' | EVTYPE == 'HIGH WIND' | EVTYPE == 'AVALANCHE')
+
+m <- ggplot(data = Injuries_DF, aes(x = Year, y = All_Injuries)) +
+  geom_point() +
+  stat_smooth() 
+m + facet_wrap( ~ EVTYPE, ncol=4, scales="free")
+print(m)
+```
+
+```{r injuries2, echo=TRUE}
+Injuries_Total <- Clean_Storm_data %>%
+  mutate(Year = year(BGN_DATE)) %>%
+  group_by(EVTYPE) %>%
+  summarise(All_Injuries = sum(INJURIES)) %>%
+  as.data.frame() %>%
+  arrange(desc(All_Injuries)) %>%
+  filter(EVTYPE == 'EXCESSIVE HEAT' | EVTYPE == 'TORNADO' | EVTYPE == 'LIGHTNING' | EVTYPE == 'FLASH FLOOD' | EVTYPE == 'RIP CURRENT' | EVTYPE == 'FLOOD' | EVTYPE == 'ICE STORM' | EVTYPE == 'HAIL')
+View(Injuries_Total)
+
+b <- ggplot(Injuries_Total, aes(x = EVTYPE, y = All_Injuries, fill = EVTYPE))
+b + geom_bar(stat = "identity")
+```
+
+##Property Damage
+```{r property, echo=TRUE}
+Property <- Clean_Storm_data %>%
+  mutate(Year = year(BGN_DATE)) %>%
+  group_by(EVTYPE) %>%
+  summarise(All_Damage = sum(PROPDMG)) %>%
+  as.data.frame() %>%
+  arrange(desc(All_Damage)) %>%
+  filter(EVTYPE == 'WINTER STORM' | EVTYPE == 'TORNADO' | EVTYPE == 'LIGHTNING' | EVTYPE == 'FLASH FLOOD' | EVTYPE == 'THUNDERSTORM WINDS' | EVTYPE == 'FLOOD' | EVTYPE == 'HIGH WIND' | EVTYPE == 'HAIL')
+View(Property)
+
+d <- ggplot(Property, aes(x = EVTYPE, y = All_Damage, fill = EVTYPE))
+d + geom_bar(stat = "identity")
+```
